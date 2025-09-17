@@ -3,7 +3,7 @@
 🎬 **Assista seus canais favoritos diretamente no navegador!**  
 Este é um **player IPTV** desenvolvido em **HTML, CSS e JavaScript**, que permite adicionar **listas M3U/M3U8** e reproduzir os canais em **HLS**.
 
-🔗 **Demo Online:** [🌐 Ver Player Online](COLE_SEU_LINK_AQUI)
+🔗 **Demo Online:** [🌐 Ver Player Online](https://tv-iptv-zr17.vercel.app/)
 
 
 ## 🚀 Funcionalidades
