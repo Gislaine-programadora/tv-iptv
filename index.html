@@ -149,39 +149,34 @@
       channelsDiv.appendChild(btn);
     });
   }
- 
-   function playChannel(index) {
-  const channel = filteredChannels[index];
-  if(!channel) return;
 
-  currentIndex = index;
-  updateActiveButton();
-  currentChannelDiv.textContent = `Assistindo: ${channel.name}`;
+  function playChannel(index) {
+    const channel = filteredChannels[index];
+    if(!channel) return;
 
-  // Limpa o player
-  if(window.hls) {
-    window.hls.destroy();
-    window.hls = null;
+    currentIndex = index;
+    updateActiveButton();
+    currentChannelDiv.textContent = `Assistindo: ${channel.name}`;
+
+    if(Hls.isSupported()) {
+      if(window.hls) {
+        window.hls.destroy();
+      }
+      window.hls = new Hls();
+      window.hls.loadSource(channel.url);
+      window.hls.attachMedia(video);
+      window.hls.on(Hls.Events.MANIFEST_PARSED, function() {
+        video.play();
+      });
+    } else if(video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = channel.url;
+      video.addEventListener('loadedmetadata', () => {
+        video.play();
+      });
+    } else {
+      alert('Seu navegador não suporta reprodução de vídeo HLS.');
+    }
   }
-  video.pause();
-  video.src = '';
-
-  if(Hls.isSupported()) {
-    window.hls = new Hls();
-    window.hls.loadSource(channel.url);
-    window.hls.attachMedia(video);
-    window.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      video.play().catch(err => console.log('Erro autoplay:', err));
-    });
-  } else if(video.canPlayType('application/vnd.apple.mpegurl')) {
-    video.src = channel.url;
-    video.addEventListener('loadedmetadata', () => {
-      video.play().catch(err => console.log('Erro autoplay:', err));
-    });
-  } else {
-    alert('Seu navegador não suporta reprodução de vídeo HLS.');
-  }
-}
 
   function updateActiveButton() {
     const buttons = channelsDiv.querySelectorAll('button');
@@ -199,7 +194,7 @@
   });
 
   // 🔹 Testa aqui: pode ser uma lista .m3u ou um único canal .m3u8
-  loadM3U('https://m3upt.com/en/');https://m3upt.com/en/
+  loadM3U('https://iptv-org.github.io/iptv/index.m3u');
   // loadM3U('http://evpp.mm.uol.com.br/ne10/ne10.smil/chunklist_w1279440291_b216000_sleng.m3u8');
 
 </script>
