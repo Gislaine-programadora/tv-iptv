@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Player IPTV Simples</title>
+<title>Player IPTV - Português</title>
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -13,11 +13,23 @@
     display: flex;
     height: 100vh;
   }
-  #channels {
-    width: 300px;
-    overflow-y: auto;
+  #sidebar {
+    width: 320px;
     background: #111;
+    display: flex;
+    flex-direction: column;
     padding: 10px;
+  }
+  #search {
+    padding: 8px;
+    font-size: 16px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 4px;
+  }
+  #channels {
+    flex-grow: 1;
+    overflow-y: auto;
   }
   #channels button {
     width: 100%;
@@ -28,32 +40,43 @@
     color: #fff;
     cursor: pointer;
     text-align: left;
+    border-radius: 4px;
+    transition: background 0.3s;
   }
   #channels button:hover, #channels button.active {
     background: #555;
   }
-  #player {
+  #player-container {
     flex-grow: 1;
     background: #000;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column;
+  }
+  #current-channel {
+    padding: 10px;
+    background: #111;
+    font-size: 18px;
+    font-weight: bold;
+    border-bottom: 1px solid #333;
   }
   video {
+    flex-grow: 1;
     width: 100%;
-    height: 100%;
     background: #000;
   }
 </style>
 </head>
 <body>
 
-<div id="channels">
-  <h2>Canais IPTV</h2>
-  <p>Carregando canais...</p>
+<div id="sidebar">
+  <input type="text" id="search" placeholder="Buscar canais..." />
+  <div id="channels">
+    <p>Carregando canais...</p>
+  </div>
 </div>
 
-<div id="player">
+<div id="player-container">
+  <div id="current-channel">Nenhum canal selecionado</div>
   <video id="videoPlayer" controls autoplay></video>
 </div>
 
@@ -61,16 +84,36 @@
 <script>
   const channelsDiv = document.getElementById('channels');
   const video = document.getElementById('videoPlayer');
-  let channels = [];
+  const searchInput = document.getElementById('search');
+  const currentChannelDiv = document.getElementById('current-channel');
 
-  // Função para carregar e parsear a lista M3U
+  let channels = [];
+  let filteredChannels = [];
+  let currentIndex = -1;
+
   async function loadM3U(url) {
-    const res = await fetch(url);
-    const text = await res.text();
-    parseM3U(text);
+    try {
+      const res = await fetch(url);
+      const text = await res.text();
+
+      // Se for lista de canais
+      if (text.includes('#EXTINF')) {
+        parseM3U(text);
+      } else {
+        // Se for só um canal .m3u8
+        channels = [{
+          name: "Canal Único",
+          url: url
+        }];
+        filteredChannels = channels;
+        renderChannels();
+      }
+    } catch (e) {
+      channelsDiv.innerHTML = '<p>Erro ao carregar a lista de canais.</p>';
+      console.error(e);
+    }
   }
 
-  // Parse simples do arquivo M3U para extrair nome e URL
   function parseM3U(data) {
     channels = [];
     const lines = data.split('\n');
@@ -84,62 +127,81 @@
         }
       }
     }
+    filteredChannels = channels;
     renderChannels();
   }
 
-  // Renderiza a lista de canais
   function renderChannels() {
-    channelsDiv.innerHTML = '<h2>Canais IPTV</h2>';
-    channels.forEach((channel, index) => {
+    channelsDiv.innerHTML = '';
+    if(filteredChannels.length === 0) {
+      channelsDiv.innerHTML = '<p>Nenhum canal encontrado.</p>';
+      return;
+    }
+    filteredChannels.forEach((channel, index) => {
       const btn = document.createElement('button');
       btn.textContent = channel.name;
       btn.addEventListener('click', () => {
-        playChannel(channel.url);
-        setActiveButton(index);
+        playChannel(index);
       });
+      if(index === currentIndex) {
+        btn.classList.add('active');
+      }
       channelsDiv.appendChild(btn);
     });
-    if(channels.length > 0) {
-      // Toca o primeiro canal por padrão
-      playChannel(channels[0].url);
-      setActiveButton(0);
-    } else {
-      channelsDiv.innerHTML += '<p>Nenhum canal encontrado.</p>';
-    }
   }
+ 
+   function playChannel(index) {
+  const channel = filteredChannels[index];
+  if(!channel) return;
 
-  // Marca o botão ativo
-  function setActiveButton(activeIndex) {
+  currentIndex = index;
+  updateActiveButton();
+  currentChannelDiv.textContent = `Assistindo: ${channel.name}`;
+
+  // Limpa o player
+  if(window.hls) {
+    window.hls.destroy();
+    window.hls = null;
+  }
+  video.pause();
+  video.src = '';
+
+  if(Hls.isSupported()) {
+    window.hls = new Hls();
+    window.hls.loadSource(channel.url);
+    window.hls.attachMedia(video);
+    window.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play().catch(err => console.log('Erro autoplay:', err));
+    });
+  } else if(video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = channel.url;
+    video.addEventListener('loadedmetadata', () => {
+      video.play().catch(err => console.log('Erro autoplay:', err));
+    });
+  } else {
+    alert('Seu navegador não suporta reprodução de vídeo HLS.');
+  }
+}
+
+  function updateActiveButton() {
     const buttons = channelsDiv.querySelectorAll('button');
     buttons.forEach((btn, i) => {
-      btn.classList.toggle('active', i === activeIndex);
+      btn.classList.toggle('active', i === currentIndex);
     });
   }
 
-  // Função para reproduzir o canal usando hls.js se necessário
-  function playChannel(url) {
-    if(Hls.isSupported()) {
-      if(window.hls) {
-        window.hls.destroy();
-      }
-      window.hls = new Hls();
-      window.hls.loadSource(url);
-      window.hls.attachMedia(video);
-      window.hls.on(Hls.Events.MANIFEST_PARSED, function() {
-        video.play();
-      });
-    } else if(video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = url;
-      video.addEventListener('loadedmetadata', () => {
-        video.play();
-      });
-    } else {
-      alert('Seu navegador não suporta reprodução de vídeo HLS.');
-    }
-  }
+  searchInput.addEventListener('input', () => {
+    const term = searchInput.value.toLowerCase();
+    filteredChannels = channels.filter(c => c.name.toLowerCase().includes(term));
+    currentIndex = -1;
+    currentChannelDiv.textContent = 'Nenhum canal selecionado';
+    renderChannels();
+  });
 
-  // Carrega a lista M3U pública
-  loadM3U('https://iptv-org.github.io/iptv/index.m3u');
+  // 🔹 Testa aqui: pode ser uma lista .m3u ou um único canal .m3u8
+  loadM3U('https://m3upt.com/en/');https://m3upt.com/en/
+  // loadM3U('http://evpp.mm.uol.com.br/ne10/ne10.smil/chunklist_w1279440291_b216000_sleng.m3u8');
+
 </script>
 
 </body>
