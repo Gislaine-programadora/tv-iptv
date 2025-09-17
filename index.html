@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Player IPTV Simples</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #000;
+    color: #fff;
+    margin: 0;
+    display: flex;
+    height: 100vh;
+  }
+  #channels {
+    width: 300px;
+    overflow-y: auto;
+    background: #111;
+    padding: 10px;
+  }
+  #channels button {
+    width: 100%;
+    margin-bottom: 5px;
+    padding: 10px;
+    background: #222;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    text-align: left;
+  }
+  #channels button:hover, #channels button.active {
+    background: #555;
+  }
+  #player {
+    flex-grow: 1;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  video {
+    width: 100%;
+    height: 100%;
+    background: #000;
+  }
+</style>
+</head>
+<body>
+
+<div id="channels">
+  <h2>Canais IPTV</h2>
+  <p>Carregando canais...</p>
+</div>
+
+<div id="player">
+  <video id="videoPlayer" controls autoplay></video>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+  const channelsDiv = document.getElementById('channels');
+  const video = document.getElementById('videoPlayer');
+  let channels = [];
+
+  // Função para carregar e parsear a lista M3U
+  async function loadM3U(url) {
+    const res = await fetch(url);
+    const text = await res.text();
+    parseM3U(text);
+  }
+
+  // Parse simples do arquivo M3U para extrair nome e URL
+  function parseM3U(data) {
+    channels = [];
+    const lines = data.split('\n');
+    for(let i = 0; i < lines.length; i++) {
+      if(lines[i].startsWith('#EXTINF')) {
+        const nameMatch = lines[i].match(/,(.*)/);
+        const name = nameMatch ? nameMatch[1].trim() : 'Canal sem nome';
+        const url = lines[i+1] ? lines[i+1].trim() : null;
+        if(url && url.startsWith('http')) {
+          channels.push({name, url});
+        }
+      }
+    }
+    renderChannels();
+  }
+
+  // Renderiza a lista de canais
+  function renderChannels() {
+    channelsDiv.innerHTML = '<h2>Canais IPTV</h2>';
+    channels.forEach((channel, index) => {
+      const btn = document.createElement('button');
+      btn.textContent = channel.name;
+      btn.addEventListener('click', () => {
+        playChannel(channel.url);
+        setActiveButton(index);
+      });
+      channelsDiv.appendChild(btn);
+    });
+    if(channels.length > 0) {
+      // Toca o primeiro canal por padrão
+      playChannel(channels[0].url);
+      setActiveButton(0);
+    } else {
+      channelsDiv.innerHTML += '<p>Nenhum canal encontrado.</p>';
+    }
+  }
+
+  // Marca o botão ativo
+  function setActiveButton(activeIndex) {
+    const buttons = channelsDiv.querySelectorAll('button');
+    buttons.forEach((btn, i) => {
+      btn.classList.toggle('active', i === activeIndex);
+    });
+  }
+
+  // Função para reproduzir o canal usando hls.js se necessário
+  function playChannel(url) {
+    if(Hls.isSupported()) {
+      if(window.hls) {
+        window.hls.destroy();
+      }
+      window.hls = new Hls();
+      window.hls.loadSource(url);
+      window.hls.attachMedia(video);
+      window.hls.on(Hls.Events.MANIFEST_PARSED, function() {
+        video.play();
+      });
+    } else if(video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url;
+      video.addEventListener('loadedmetadata', () => {
+        video.play();
+      });
+    } else {
+      alert('Seu navegador não suporta reprodução de vídeo HLS.');
+    }
+  }
+
+  // Carrega a lista M3U pública
+  loadM3U('https://iptv-org.github.io/iptv/index.m3u');
+</script>
+
+</body>
+</html>

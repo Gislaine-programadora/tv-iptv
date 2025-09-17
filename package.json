@@ -1,0 +1,20 @@
+
+---
+
+### package.json
+
+```json
+{
+  "name": "tv-iptv",
+  "version": "1.0.0",
+  "description": "Player IPTV online em HTML, CSS e JavaScript",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server -c-1 -p 8080"
+  },
+  "author": "Gislaine Cristina",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

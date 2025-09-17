@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Visualizador de Lista M3U</title>
+<style>
+  body {
+    font-family: monospace, monospace;
+    background: #111;
+    color: #eee;
+    padding: 20px;
+  }
+  textarea {
+    width: 100%;
+    height: 80vh;
+    background: #222;
+    color: #eee;
+    border: none;
+    padding: 10px;
+    resize: none;
+    font-size: 14px;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    border: none;
+  }
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: none;
+    background: #007bff;
+    color: white;
+  }
+  button:hover {
+    background: #0056b3;
+  }
+</style>
+</head>
+<body>
+
+<h1>Visualizador de Lista M3U</h1>
+<input type="text" id="urlInput" placeholder="Cole o link da lista M3U aqui" value="http://felas87dz.icu:80/get.php?username=ednamaria&password=366242934&type=m3u_plus" />
+<button id="loadBtn">Carregar Lista</button>
+
+<textarea id="m3uContent" readonly placeholder="O conteúdo da lista aparecerá aqui..."></textarea>
+
+<script>
+  const loadBtn = document.getElementById('loadBtn');
+  const urlInput = document.getElementById('urlInput');
+  const m3uContent = document.getElementById('m3uContent');
+
+  loadBtn.addEventListener('click', async () => {
+    const url = urlInput.value.trim();
+    if (!url) {
+      alert('Por favor, insira um link válido.');
+      return;
+    }
+
+    m3uContent.value = 'Carregando...';
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+      const text = await response.text();
+      m3uContent.value = text;
+    } catch (error) {
+      m3uContent.value = `Erro ao carregar a lista:\n${error.message}`;
+    }
+  });
+</script>
+
+</body>
+</html>
