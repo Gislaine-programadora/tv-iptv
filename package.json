@@ -1,9 +1,4 @@
 
----
-
-### package.json
-
-```json
 {
   "name": "tv-iptv",
   "version": "1.0.0",
